@@ -1,0 +1,1852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DermAI — Intelligent Skin Cancer Detection</title>
+<link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;500;600;700&family=Cabinet+Grotesk:wght@300;400;500;700;800&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ═══════════════════════════════════════
+   DESIGN SYSTEM — Premium Medical Dark
+   Palette: Deep navy + electric teal + 
+   warm amber accents
+═══════════════════════════════════════ */
+:root {
+  --ink:       #05080f;
+  --ink2:      #0a0f1e;
+  --ink3:      #0f1628;
+  --panel:     #111827;
+  --panel2:    #161f34;
+  --panel3:    #1c2640;
+  --rim:       rgba(255,255,255,0.06);
+  --rim2:      rgba(255,255,255,0.10);
+  --rim3:      rgba(255,255,255,0.16);
+
+  --teal:      #0ef0d4;
+  --teal2:     #00c4aa;
+  --teal3:     rgba(14,240,212,0.12);
+  --blue:      #2563eb;
+  --blue2:     #3b82f6;
+  --blue3:     rgba(37,99,235,0.15);
+  --amber:     #f59e0b;
+  --amber2:    #fbbf24;
+  --rose:      #f43f5e;
+  --rose2:     #fb7185;
+  --emerald:   #10b981;
+  --violet:    #8b5cf6;
+
+  --text:      #f0f4ff;
+  --text2:     #94a3b8;
+  --text3:     #475569;
+  --text4:     #1e293b;
+
+  --grad-main: linear-gradient(135deg, #0ef0d4 0%, #2563eb 100%);
+  --grad-warm: linear-gradient(135deg, #f59e0b 0%, #f43f5e 100%);
+  --grad-cool: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+
+  --shadow-sm:  0 2px 8px rgba(0,0,0,0.4);
+  --shadow-md:  0 8px 32px rgba(0,0,0,0.5);
+  --shadow-lg:  0 24px 64px rgba(0,0,0,0.6);
+  --glow-teal:  0 0 40px rgba(14,240,212,0.18), 0 0 80px rgba(14,240,212,0.08);
+  --glow-blue:  0 0 40px rgba(37,99,235,0.2);
+
+  --radius-sm:  8px;
+  --radius-md:  14px;
+  --radius-lg:  20px;
+  --radius-xl:  28px;
+  --radius-2xl: 40px;
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+html { scroll-behavior:smooth; }
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--ink);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  cursor: default;
+}
+
+/* Ambient background mesh */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse 900px 600px at 10% 0%,   rgba(14,240,212,0.05) 0%, transparent 70%),
+    radial-gradient(ellipse 700px 500px at 90% 100%, rgba(37,99,235,0.07)  0%, transparent 70%),
+    radial-gradient(ellipse 500px 400px at 60% 40%,  rgba(139,92,246,0.04) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+/* Noise texture overlay */
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+/* ─────────────── SCROLLBAR ─────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--ink2); }
+::-webkit-scrollbar-thumb { background: var(--panel3); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--teal2); }
+
+/* ─────────────── NAVBAR ─────────────── */
+#navbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 9000;
+  height: 68px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 5%;
+  background: rgba(5,8,15,0.75);
+  backdrop-filter: blur(24px) saturate(180%);
+  border-bottom: 1px solid var(--rim);
+  transition: background 0.4s;
+}
+
+.logo {
+  display: flex; align-items: center; gap: 10px;
+  text-decoration: none; cursor: pointer;
+}
+.logo-mark {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: var(--grad-main);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; color: #000;
+  box-shadow: var(--glow-teal);
+}
+.logo-text {
+  font-family: 'Clash Display', sans-serif;
+  font-weight: 700; font-size: 1.3rem;
+  background: var(--grad-main);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  letter-spacing: -0.02em;
+}
+
+.nav-center {
+  display: flex; gap: 2px;
+  background: var(--panel);
+  border: 1px solid var(--rim);
+  border-radius: 100px;
+  padding: 4px;
+}
+.nav-center a {
+  font-size: 0.85rem; font-weight: 500;
+  color: var(--text2); text-decoration: none;
+  padding: 8px 20px; border-radius: 100px;
+  cursor: pointer; transition: all 0.25s;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.nav-center a:hover { color: var(--text); }
+.nav-center a.active {
+  background: var(--panel3);
+  color: var(--teal);
+  box-shadow: inset 0 1px 0 var(--rim2);
+}
+
+.nav-btn {
+  display: flex; align-items: center; gap: 8px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.875rem; font-weight: 600;
+  color: #000; background: var(--grad-main);
+  border: none; padding: 10px 22px; border-radius: 100px;
+  cursor: pointer; transition: all 0.3s;
+  box-shadow: 0 4px 20px rgba(14,240,212,0.3);
+  letter-spacing: 0.01em;
+}
+.nav-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 30px rgba(14,240,212,0.45);
+}
+
+.hamburger {
+  display: none; flex-direction: column; gap: 5px;
+  cursor: pointer; padding: 6px;
+}
+.hamburger span {
+  display: block; width: 22px; height: 2px;
+  background: var(--text); border-radius: 2px; transition: 0.3s;
+}
+
+/* ─────────────── PAGES ─────────────── */
+.page { display: none; min-height: 100vh; padding-top: 68px; position: relative; z-index: 1; }
+.page.active { display: block; animation: pageIn 0.5s ease; }
+@keyframes pageIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+
+/* ═══════════════════════════════════════
+   HOME PAGE
+═══════════════════════════════════════ */
+
+/* Hero */
+.hero {
+  min-height: calc(100vh - 68px);
+  display: grid; grid-template-columns: 1fr 1fr;
+  align-items: center; gap: 60px;
+  padding: 60px 7%;
+  position: relative;
+}
+
+/* Diagonal accent line */
+.hero::before {
+  content: '';
+  position: absolute; top: 0; right: 35%;
+  width: 1px; height: 100%;
+  background: linear-gradient(to bottom, transparent, var(--rim2) 30%, var(--rim2) 70%, transparent);
+}
+
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: var(--teal3);
+  border: 1px solid rgba(14,240,212,0.25);
+  padding: 7px 16px 7px 10px; border-radius: 100px;
+  margin-bottom: 30px;
+}
+.hero-eyebrow-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--teal);
+  box-shadow: 0 0 10px var(--teal);
+  animation: breathe 2.5s ease-in-out infinite;
+}
+@keyframes breathe { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.5;transform:scale(0.8);} }
+.hero-eyebrow span {
+  font-size: 0.78rem; font-weight: 600;
+  color: var(--teal); letter-spacing: 0.08em; text-transform: uppercase;
+}
+
+.hero-h1 {
+  font-family: 'Clash Display', sans-serif;
+  font-weight: 700;
+  font-size: clamp(2.6rem, 4.5vw, 4rem);
+  line-height: 1.06; letter-spacing: -0.03em;
+  margin-bottom: 22px;
+}
+.hero-h1 .grad {
+  background: var(--grad-main);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero-h1 .outline {
+  -webkit-text-stroke: 1px rgba(255,255,255,0.25);
+  -webkit-text-fill-color: transparent;
+}
+
+.hero-desc {
+  font-size: 1.05rem; font-weight: 300;
+  color: var(--text2); line-height: 1.75;
+  max-width: 480px; margin-bottom: 40px;
+}
+
+.hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 9px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.95rem; font-weight: 600;
+  color: #000; background: var(--grad-main);
+  border: none; padding: 15px 30px; border-radius: var(--radius-lg);
+  cursor: pointer; transition: all 0.3s;
+  box-shadow: 0 6px 24px rgba(14,240,212,0.35);
+  letter-spacing: 0.01em;
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(14,240,212,0.5); }
+.btn-outline {
+  display: inline-flex; align-items: center; gap: 9px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.95rem; font-weight: 500; color: var(--text);
+  background: transparent;
+  border: 1px solid var(--rim2); padding: 15px 26px; border-radius: var(--radius-lg);
+  cursor: pointer; transition: all 0.3s;
+}
+.btn-outline:hover { border-color: var(--teal); color: var(--teal); background: var(--teal3); }
+
+.hero-trust {
+  display: flex; align-items: center; gap: 14px;
+  margin-top: 32px; padding-top: 28px;
+  border-top: 1px solid var(--rim);
+}
+.trust-item {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.82rem; color: var(--text2);
+}
+.trust-icon { color: var(--teal); font-size: 0.85rem; }
+.trust-sep { color: var(--rim2); }
+
+/* Hero visual */
+.hero-right { position: relative; }
+
+.hero-main-card {
+  background: var(--panel);
+  border: 1px solid var(--rim2);
+  border-radius: var(--radius-xl);
+  padding: 28px;
+  position: relative; overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+.hero-main-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--teal) 40%, var(--blue2) 70%, transparent 100%);
+}
+
+.scan-area {
+  height: 200px; border-radius: var(--radius-md);
+  background: var(--ink2);
+  position: relative; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 22px;
+}
+.scan-grid-bg {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(14,240,212,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(14,240,212,0.06) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+.scan-beam {
+  position: absolute; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--teal) 30%, var(--teal) 70%, transparent);
+  box-shadow: 0 0 12px var(--teal);
+  animation: beam 3s ease-in-out infinite;
+}
+@keyframes beam { 0%{top:0;opacity:0;} 8%{opacity:1;} 92%{opacity:1;} 100%{top:100%;opacity:0;} }
+
+.scan-crosshair {
+  position: relative; z-index: 2;
+  width: 80px; height: 80px;
+}
+.crosshair-ring {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 1px solid rgba(14,240,212,0.3);
+  animation: ringPulse 2.5s ease-out infinite;
+}
+.crosshair-ring:nth-child(2) { animation-delay: 0.8s; }
+.crosshair-ring:nth-child(3) { animation-delay: 1.6s; }
+@keyframes ringPulse { 0%{transform:scale(0.6);opacity:1;} 100%{transform:scale(1.6);opacity:0;} }
+.crosshair-center {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.6rem; color: var(--teal);
+  text-shadow: 0 0 20px var(--teal);
+}
+
+.scan-corners {
+  position: absolute; inset: 12px;
+}
+.corner {
+  position: absolute; width: 16px; height: 16px;
+  border-color: var(--teal); border-style: solid; border-width: 0;
+}
+.corner.tl { top:0;left:0; border-top-width:2px; border-left-width:2px; }
+.corner.tr { top:0;right:0; border-top-width:2px; border-right-width:2px; }
+.corner.bl { bottom:0;left:0; border-bottom-width:2px; border-left-width:2px; }
+.corner.br { bottom:0;right:0; border-bottom-width:2px; border-right-width:2px; }
+
+.card-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+.card-stat {
+  background: var(--ink2); border: 1px solid var(--rim);
+  border-radius: var(--radius-md); padding: 14px 12px; text-align: center;
+}
+.card-stat-val {
+  font-family: 'Clash Display', sans-serif; font-weight: 600;
+  font-size: 1.3rem; color: var(--teal);
+  display: block; margin-bottom: 2px;
+}
+.card-stat-lab { font-size: 0.73rem; color: var(--text3); letter-spacing: 0.04em; }
+
+/* Floating chips */
+.float-chip {
+  position: absolute;
+  background: var(--panel2); border: 1px solid var(--rim2);
+  border-radius: 100px; padding: 8px 16px;
+  font-size: 0.78rem; font-weight: 600;
+  display: flex; align-items: center; gap: 6px;
+  box-shadow: var(--shadow-md);
+  animation: floatY 4s ease-in-out infinite;
+}
+.float-chip.fc1 { top: -16px; right: 20px; color: var(--emerald); animation-delay: 0s; }
+.float-chip.fc2 { bottom: 60px; left: -20px; color: var(--amber); animation-delay: 1.5s; }
+.float-chip.fc3 { bottom: 20px; right: -16px; color: var(--blue2); animation-delay: 0.8s; }
+@keyframes floatY { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-8px);} }
+
+/* ───── Disease Gallery ───── */
+.section {
+  padding: 100px 7%;
+  position: relative;
+}
+.section-label {
+  font-size: 0.75rem; font-weight: 700;
+  color: var(--teal); letter-spacing: 0.14em; text-transform: uppercase;
+  display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+}
+.section-label::before {
+  content: '';
+  display: block; width: 28px; height: 1px;
+  background: var(--teal);
+}
+.section-h2 {
+  font-family: 'Clash Display', sans-serif; font-weight: 600;
+  font-size: clamp(1.9rem, 3vw, 2.7rem); letter-spacing: -0.03em;
+  line-height: 1.15; margin-bottom: 14px;
+}
+.section-sub {
+  color: var(--text2); font-size: 1rem; line-height: 1.7;
+  max-width: 560px; font-weight: 300;
+}
+
+/* Horizontal scroll disease cards */
+.disease-scroll {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(185px,1fr));
+  gap: 16px; margin-top: 48px;
+}
+.d-card {
+  background: var(--panel);
+  border: 1px solid var(--rim);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  cursor: pointer; transition: all 0.35s;
+  position: relative;
+}
+.d-card:hover {
+  transform: translateY(-8px);
+  border-color: var(--rim2);
+  box-shadow: var(--shadow-lg);
+}
+.d-card-img {
+  height: 120px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.6rem; position: relative; overflow: hidden;
+}
+.d-card-img::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, transparent 40%, var(--panel));
+}
+.d-card-body { padding: 14px 16px 16px; }
+.d-card-code {
+  font-family: 'Clash Display', sans-serif; font-size: 0.75rem;
+  font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.d-card-name { font-size: 0.88rem; font-weight: 600; margin-bottom: 6px; }
+.d-card-desc { font-size: 0.77rem; color: var(--text2); line-height: 1.5; }
+.d-risk {
+  display: inline-block; margin-top: 10px;
+  padding: 3px 10px; border-radius: 100px;
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em;
+}
+.risk-h { background: rgba(244,63,94,0.12); color: var(--rose2); border:1px solid rgba(244,63,94,0.2); }
+.risk-m { background: rgba(245,158,11,0.12); color: var(--amber2); border:1px solid rgba(245,158,11,0.2); }
+.risk-l { background: rgba(16,185,129,0.12); color: var(--emerald); border:1px solid rgba(16,185,129,0.2); }
+
+/* ───── Info Cards ───── */
+.info-bento {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 20px; margin-top: 50px;
+}
+.i-card {
+  background: var(--panel);
+  border: 1px solid var(--rim);
+  border-radius: var(--radius-xl);
+  padding: 32px; transition: all 0.3s;
+  position: relative; overflow: hidden;
+}
+.i-card:hover { border-color: var(--rim2); transform: translateY(-3px); }
+.i-card.wide { grid-column: span 2; }
+.i-card-top {
+  display: flex; align-items: center; gap: 14px; margin-bottom: 18px;
+}
+.i-icon {
+  width: 48px; height: 48px; border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; flex-shrink: 0;
+}
+.i-card h3 {
+  font-family: 'Clash Display', sans-serif; font-weight: 600;
+  font-size: 1.05rem; letter-spacing: -0.01em;
+}
+.i-card p, .i-card li {
+  color: var(--text2); font-size: 0.9rem; line-height: 1.75; font-weight: 300;
+}
+.i-card ul { padding-left: 18px; }
+.i-card li::marker { color: var(--teal); }
+.i-card li { margin-bottom: 3px; }
+
+/* CTA band */
+.cta-band {
+  margin: 0 7% 80px;
+  background: linear-gradient(135deg, var(--panel2) 0%, var(--panel3) 100%);
+  border: 1px solid var(--rim2);
+  border-radius: var(--radius-2xl);
+  padding: 60px;
+  display: grid; grid-template-columns: 1fr auto;
+  align-items: center; gap: 40px;
+  position: relative; overflow: hidden;
+}
+.cta-band::before {
+  content: '';
+  position: absolute; top: -60px; right: -60px;
+  width: 300px; height: 300px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(14,240,212,0.08), transparent 70%);
+}
+.cta-band h2 {
+  font-family: 'Clash Display', sans-serif; font-size: clamp(1.6rem,2.5vw,2.1rem);
+  font-weight: 700; letter-spacing: -0.03em; margin-bottom: 10px;
+}
+.cta-band p { color: var(--text2); font-size: 0.95rem; font-weight: 300; }
+
+/* ═══════════════════════════════════════
+   PREDICTION PAGE
+═══════════════════════════════════════ */
+.pred-page { padding: 60px 7%; }
+.pred-header { margin-bottom: 44px; }
+.pred-header h1 {
+  font-family: 'Clash Display', sans-serif; font-size: clamp(2rem,3.5vw,2.8rem);
+  font-weight: 700; letter-spacing: -0.03em; margin-bottom: 8px;
+}
+.pred-header p { color: var(--text2); font-size: 1rem; font-weight: 300; }
+
+/* Upload zone */
+.upload-zone {
+  border: 2px dashed var(--rim2);
+  border-radius: var(--radius-xl);
+  background: var(--panel);
+  padding: 70px 40px;
+  text-align: center; cursor: pointer;
+  transition: all 0.3s;
+  position: relative; overflow: hidden;
+}
+.upload-zone::before {
+  content: '';
+  position: absolute; inset: 0; border-radius: var(--radius-xl);
+  background: radial-gradient(ellipse at 50% 100%, var(--teal3), transparent 70%);
+  opacity: 0; transition: opacity 0.3s;
+}
+.upload-zone:hover, .upload-zone.over {
+  border-color: var(--teal2);
+  box-shadow: var(--glow-teal);
+}
+.upload-zone:hover::before, .upload-zone.over::before { opacity: 1; }
+
+.upload-icon-wrap {
+  width: 88px; height: 88px; border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--teal3), var(--blue3));
+  border: 1px solid rgba(14,240,212,0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.2rem; color: var(--teal);
+  margin: 0 auto 24px;
+  position: relative; z-index: 1;
+  box-shadow: 0 8px 32px rgba(14,240,212,0.15);
+}
+.upload-zone h3 {
+  font-family: 'Clash Display', sans-serif; font-size: 1.4rem;
+  font-weight: 600; margin-bottom: 10px; position: relative; z-index:1;
+}
+.upload-zone p { color: var(--text2); font-size: 0.92rem; margin-bottom: 26px; position: relative; z-index:1; }
+.upload-zone input { display: none; }
+
+.browse-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.9rem; font-weight: 600;
+  color: #000; background: var(--grad-main);
+  border: none; padding: 12px 26px; border-radius: 100px;
+  cursor: pointer; transition: all 0.3s; position: relative; z-index: 1;
+  box-shadow: 0 4px 18px rgba(14,240,212,0.3);
+}
+.browse-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 28px rgba(14,240,212,0.45); }
+.upload-hint { margin-top: 16px; font-size: 0.78rem; color: var(--text3); position: relative; z-index:1; }
+
+/* Preview card */
+.preview-card {
+  display: none;
+  background: var(--panel); border: 1px solid var(--rim2);
+  border-radius: var(--radius-xl); padding: 28px;
+  margin-top: 24px;
+}
+.preview-card.show { display: block; animation: fadeUp 0.4s ease; }
+.preview-top {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.preview-top h3 {
+  font-family: 'Clash Display', sans-serif; font-weight: 600; font-size: 1rem;
+  display: flex; align-items: center; gap: 8px;
+}
+.preview-top h3 i { color: var(--teal); }
+.btn-clear {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(244,63,94,0.1); color: var(--rose2);
+  border: 1px solid rgba(244,63,94,0.18);
+  padding: 7px 14px; border-radius: var(--radius-sm);
+  font-size: 0.82rem; font-weight: 500; cursor: pointer; transition: all 0.2s;
+}
+.btn-clear:hover { background: rgba(244,63,94,0.2); }
+#prevImg { width:100%; max-height: 280px; object-fit: contain; border-radius: var(--radius-md); background: var(--ink2); }
+.btn-analyze {
+  width: 100%; margin-top: 20px;
+  font-family: 'Clash Display', sans-serif; font-size: 1.05rem; font-weight: 600;
+  color: #000; background: var(--grad-main);
+  border: none; padding: 17px; border-radius: var(--radius-md);
+  cursor: pointer; transition: all 0.3s; letter-spacing: 0.02em;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  box-shadow: 0 6px 24px rgba(14,240,212,0.35);
+}
+.btn-analyze:hover { transform: translateY(-1px); box-shadow: 0 12px 40px rgba(14,240,212,0.5); }
+.btn-analyze:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+/* Loader */
+.loader {
+  display: none; flex-direction: column; align-items: center;
+  justify-content: center; gap: 18px; padding: 60px;
+  margin-top: 24px;
+}
+.loader.show { display: flex; animation: fadeUp 0.3s ease; }
+.loader-ring {
+  width: 64px; height: 64px; border-radius: 50%;
+  border: 2px solid var(--rim2);
+  border-top-color: var(--teal);
+  animation: spin 0.9s linear infinite;
+  box-shadow: 0 0 20px rgba(14,240,212,0.2);
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loader-steps { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.loader-main { font-size: 0.95rem; font-weight: 500; color: var(--teal); }
+.loader-sub { font-size: 0.8rem; color: var(--text3); }
+
+/* ── Results Dashboard ── */
+.results-wrap {
+  display: none; margin-top: 30px;
+}
+.results-wrap.show { display: block; animation: fadeUp 0.5s ease; }
+
+.results-top { display: grid; grid-template-columns: 1.1fr 1fr; gap: 20px; margin-bottom: 20px; }
+
+/* Main result panel */
+.result-panel {
+  background: var(--panel); border: 1px solid var(--rim2);
+  border-radius: var(--radius-xl); padding: 30px;
+  position: relative; overflow: hidden;
+}
+.result-panel::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--grad-main);
+}
+
+.res-eyebrow {
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text3); margin-bottom: 8px;
+}
+.res-disease {
+  font-family: 'Clash Display', sans-serif; font-weight: 700;
+  font-size: clamp(1.6rem,3vw,2.3rem); letter-spacing: -0.03em;
+  background: var(--grad-main);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  margin-bottom: 4px;
+}
+.res-code {
+  font-size: 0.85rem; color: var(--text2); margin-bottom: 26px;
+  font-style: italic;
+}
+.conf-block { margin-bottom: 20px; }
+.conf-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 8px;
+}
+.conf-label { font-size: 0.8rem; color: var(--text2); font-weight: 500; }
+.conf-val {
+  font-family: 'Clash Display', sans-serif; font-size: 1.3rem;
+  font-weight: 600; color: var(--teal);
+}
+.conf-track {
+  height: 8px; background: var(--ink2); border-radius: 100px; overflow: hidden;
+}
+.conf-fill {
+  height: 100%; border-radius: 100px;
+  background: var(--grad-main);
+  transition: width 1.6s cubic-bezier(0.25,1,0.5,1);
+  box-shadow: 0 0 12px rgba(14,240,212,0.4);
+}
+.severity-tag {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 18px; border-radius: 100px; font-size: 0.85rem; font-weight: 600;
+}
+.sev-high { background:rgba(244,63,94,0.1); color:var(--rose2); border:1px solid rgba(244,63,94,0.2); }
+.sev-med  { background:rgba(245,158,11,0.1); color:var(--amber2); border:1px solid rgba(245,158,11,0.2); }
+.sev-low  { background:rgba(16,185,129,0.1); color:var(--emerald); border:1px solid rgba(16,185,129,0.2); }
+
+/* Chart card */
+.chart-panel {
+  background: var(--panel); border: 1px solid var(--rim);
+  border-radius: var(--radius-xl); padding: 26px;
+}
+.panel-h { font-family:'Clash Display',sans-serif; font-size:0.95rem; font-weight:600; margin-bottom:18px; color:var(--text2); }
+.chart-wrap { height: 220px; position: relative; }
+
+/* Probability bars */
+.prob-panel {
+  background: var(--panel); border: 1px solid var(--rim);
+  border-radius: var(--radius-xl); padding: 28px; margin-bottom: 20px;
+}
+.prob-list { display: flex; flex-direction: column; gap: 12px; }
+.prob-row { display: flex; align-items: center; gap: 12px; }
+.prob-name { font-size: 0.82rem; color: var(--text2); width: 100px; flex-shrink: 0; font-weight: 500; }
+.prob-track { flex: 1; height: 7px; background: var(--ink2); border-radius: 100px; overflow: hidden; }
+.prob-fill { height: 100%; border-radius: 100px; transition: width 1.3s cubic-bezier(0.25,1,0.5,1); }
+.prob-pct { font-size: 0.8rem; font-weight: 600; color: var(--text); width: 46px; text-align: right; }
+
+/* Info panels */
+.info-results { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.ir-card {
+  background: var(--panel); border: 1px solid var(--rim);
+  border-radius: var(--radius-lg); padding: 24px; transition: 0.3s;
+}
+.ir-card:hover { border-color: var(--rim2); }
+.ir-card.full { grid-column: span 2; }
+.ir-icon { font-size: 1.3rem; margin-bottom: 12px; display: block; }
+.ir-card h4 {
+  font-family: 'Clash Display', sans-serif; font-size: 0.95rem;
+  font-weight: 600; margin-bottom: 12px;
+}
+.ir-card p, .ir-card li { color: var(--text2); font-size: 0.87rem; line-height: 1.7; }
+.ir-card ul { padding-left: 16px; }
+.ir-card li::marker { color: var(--teal); }
+.rec-row {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 9px 0; border-bottom: 1px solid var(--rim);
+}
+.rec-row:last-child { border: none; }
+.rec-row i { color: var(--teal); font-size: 0.75rem; margin-top: 4px; flex-shrink: 0; }
+.rec-row p { color: var(--text2); font-size: 0.87rem; line-height: 1.5; }
+
+.disclaimer-box {
+  background: rgba(14,240,212,0.04);
+  border: 1px solid rgba(14,240,212,0.15);
+  border-radius: var(--radius-md); padding: 18px 22px;
+  display: flex; align-items: flex-start; gap: 12px; margin-top: 18px;
+}
+.disclaimer-box i { color: var(--teal); margin-top: 1px; flex-shrink: 0; }
+.disclaimer-box p { font-size: 0.85rem; color: var(--text2); line-height: 1.6; }
+
+/* ═══════════════════════════════════════
+   ABOUT PAGE
+═══════════════════════════════════════ */
+.about-hero-section {
+  padding: 90px 7% 70px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center;
+}
+.about-hero-section h1 {
+  font-family: 'Clash Display', sans-serif; font-weight: 700;
+  font-size: clamp(2.2rem,3.5vw,3rem); letter-spacing: -0.03em;
+  line-height: 1.1; margin-bottom: 18px;
+}
+.about-hero-section p { color: var(--text2); font-size: 1rem; line-height: 1.75; font-weight: 300; }
+.about-metrics { display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; margin-top: 36px; }
+.about-metric {
+  background: var(--panel); border: 1px solid var(--rim);
+  border-radius: var(--radius-lg); padding: 22px;
+}
+.am-num {
+  font-family: 'Clash Display', sans-serif; font-size: 2rem;
+  font-weight: 700; background: var(--grad-main);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  display: block; margin-bottom: 3px;
+}
+.am-desc { font-size: 0.82rem; color: var(--text2); }
+
+.about-visual {
+  background: var(--panel); border: 1px solid var(--rim2);
+  border-radius: var(--radius-xl); padding: 30px; position: relative; overflow: hidden;
+}
+.about-visual::before {
+  content: '';
+  position: absolute; top:0; left:0; right:0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--teal), transparent);
+}
+.about-tech-stack {
+  display: grid; grid-template-columns: repeat(2,1fr); gap: 12px;
+}
+.tech-item {
+  background: var(--ink2); border: 1px solid var(--rim);
+  border-radius: var(--radius-md); padding: 16px 18px;
+  display: flex; align-items: center; gap: 12px;
+}
+.tech-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.tech-name { font-size: 0.85rem; font-weight: 500; }
+.tech-sub { font-size: 0.75rem; color: var(--text3); }
+
+/* About cards grid */
+.about-cards {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: 20px;
+  padding: 0 7% 80px;
+}
+.a-card {
+  background: var(--panel); border: 1px solid var(--rim);
+  border-radius: var(--radius-xl); padding: 30px;
+  position: relative; overflow: hidden; transition: all 0.3s;
+}
+.a-card:hover { transform: translateY(-5px); border-color: var(--rim2); box-shadow: var(--shadow-lg); }
+.a-card-stripe {
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+}
+.a-card-emoji { font-size: 2rem; margin-bottom: 18px; display: block; }
+.a-card h3 {
+  font-family: 'Clash Display', sans-serif; font-weight: 600;
+  font-size: 1.05rem; margin-bottom: 12px;
+}
+.a-card p { color: var(--text2); font-size: 0.88rem; line-height: 1.7; font-weight: 300; }
+
+/* Classes table */
+.classes-section { padding: 0 7% 80px; }
+.classes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: 14px; margin-top: 36px; }
+.cls-card {
+  background: var(--panel); border: 1px solid var(--rim);
+  border-radius: var(--radius-lg); padding: 20px; transition: 0.3s;
+}
+.cls-card:hover { border-color: var(--teal2); background: var(--panel2); }
+.cls-code {
+  font-family: 'Clash Display', sans-serif; font-size: 1rem; font-weight: 600;
+  color: var(--teal); margin-bottom: 5px;
+}
+.cls-name { font-size: 0.85rem; font-weight: 600; margin-bottom: 7px; }
+.cls-desc { font-size: 0.78rem; color: var(--text2); line-height: 1.55; }
+
+/* ═══════════════════════════════════════
+   CONTACT PAGE
+═══════════════════════════════════════ */
+.contact-page { padding: 80px 7%; display: grid; grid-template-columns: 1fr 1.5fr; gap: 64px; align-items: start; }
+
+.contact-left h2 {
+  font-family: 'Clash Display', sans-serif; font-size: clamp(2rem,3vw,2.6rem);
+  font-weight: 700; letter-spacing: -0.03em; margin-bottom: 14px; line-height: 1.1;
+}
+.contact-left p { color: var(--text2); font-size: 1rem; line-height: 1.7; margin-bottom: 42px; font-weight: 300; }
+
+.contact-info-list { display: flex; flex-direction: column; gap: 14px; margin-bottom: 40px; }
+.ci-item {
+  display: flex; align-items: flex-start; gap: 16px;
+  background: var(--panel); border: 1px solid var(--rim);
+  border-radius: var(--radius-lg); padding: 18px 22px; transition: 0.25s;
+}
+.ci-item:hover { border-color: var(--rim2); }
+.ci-icon {
+  width: 44px; height: 44px; flex-shrink: 0; border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; color: var(--teal);
+  background: var(--teal3); border: 1px solid rgba(14,240,212,0.18);
+}
+.ci-label { font-size: 0.72rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; }
+.ci-val { font-size: 0.9rem; font-weight: 500; }
+.ci-hours { display: flex; flex-direction: column; gap: 2px; }
+.ci-hours li { list-style: none; font-size: 0.83rem; color: var(--text2); }
+
+.social-label { font-size: 0.75rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 14px; }
+.social-row { display: flex; gap: 10px; }
+.soc-btn {
+  width: 42px; height: 42px; border-radius: var(--radius-md);
+  background: var(--panel); border: 1px solid var(--rim);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text2); font-size: 1rem; text-decoration: none;
+  cursor: pointer; transition: all 0.25s;
+}
+.soc-btn:hover { border-color: var(--teal); color: var(--teal); transform: translateY(-2px); }
+
+/* Contact form */
+.contact-form {
+  background: var(--panel); border: 1px solid var(--rim2);
+  border-radius: var(--radius-xl); padding: 42px;
+  position: relative; overflow: hidden;
+}
+.contact-form::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--grad-main);
+}
+.cf-head { margin-bottom: 30px; }
+.cf-head h3 {
+  font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: 1.5rem;
+  margin-bottom: 5px; letter-spacing: -0.02em;
+}
+.cf-head p { color: var(--text2); font-size: 0.88rem; }
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.form-group { display: flex; flex-direction: column; gap: 7px; }
+.form-group.full { grid-column: 1/-1; }
+.form-group label {
+  font-size: 0.75rem; font-weight: 600; color: var(--text2);
+  text-transform: uppercase; letter-spacing: 0.07em;
+}
+.form-group input, .form-group textarea {
+  background: var(--ink2); border: 1px solid var(--rim);
+  border-radius: var(--radius-md); padding: 13px 16px;
+  color: var(--text); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.92rem;
+  outline: none; transition: all 0.25s; resize: none;
+}
+.form-group input::placeholder, .form-group textarea::placeholder { color: var(--text3); }
+.form-group input:focus, .form-group textarea:focus {
+  border-color: var(--teal2); background: rgba(14,240,212,0.02);
+  box-shadow: 0 0 0 3px rgba(14,240,212,0.07);
+}
+.form-group textarea { height: 130px; }
+
+.btn-send {
+  width: 100%; margin-top: 8px;
+  font-family: 'Clash Display', sans-serif; font-size: 1rem; font-weight: 600;
+  color: #000; background: var(--grad-main);
+  border: none; padding: 16px; border-radius: var(--radius-md);
+  cursor: pointer; transition: all 0.3s; letter-spacing: 0.02em;
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  box-shadow: 0 6px 24px rgba(14,240,212,0.3);
+}
+.btn-send:hover { transform: translateY(-1px); box-shadow: 0 12px 40px rgba(14,240,212,0.45); }
+
+.form-success-msg {
+  display: none; align-items: center; gap: 10px;
+  background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2);
+  border-radius: var(--radius-md); padding: 14px 18px; margin-top: 14px;
+  color: var(--emerald); font-size: 0.88rem;
+}
+.form-success-msg.show { display: flex; animation: fadeUp 0.3s ease; }
+
+/* ─────────────── FOOTER ─────────────── */
+footer {
+  position: relative; z-index: 1;
+  background: var(--ink2); border-top: 1px solid var(--rim);
+  padding: 36px 7%;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 20px;
+}
+.footer-left { display: flex; flex-direction: column; gap: 4px; }
+.footer-logo {
+  font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: 1.15rem;
+  background: var(--grad-main); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  cursor: pointer;
+}
+.footer-copy { font-size: 0.78rem; color: var(--text3); }
+.footer-links { display: flex; gap: 24px; }
+.footer-links a {
+  font-size: 0.82rem; color: var(--text3); text-decoration: none; cursor: pointer; transition: 0.2s;
+}
+.footer-links a:hover { color: var(--teal); }
+
+/* ─────────────── MOBILE NAV ─────────────── */
+.mobile-drawer {
+  display: none;
+  position: fixed; top: 68px; left: 0; right: 0; z-index: 8999;
+  background: rgba(5,8,15,0.97); backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--rim); padding: 16px;
+  flex-direction: column; gap: 6px;
+}
+.mobile-drawer.open { display: flex; }
+.mobile-drawer a {
+  padding: 13px 18px; border-radius: var(--radius-md);
+  color: var(--text2); text-decoration: none; font-size: 0.95rem; cursor: pointer; transition: 0.2s;
+}
+.mobile-drawer a:hover, .mobile-drawer a.active { color: var(--teal); background: var(--teal3); }
+
+/* ─────────────── UTILITIES ─────────────── */
+@keyframes fadeUp { from{opacity:0;transform:translateY(18px);} to{opacity:1;transform:none;} }
+@keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
+
+.du1 { animation: fadeUp 0.6s ease both; }
+.du2 { animation: fadeUp 0.6s 0.12s ease both; }
+.du3 { animation: fadeUp 0.6s 0.24s ease both; }
+.du4 { animation: fadeUp 0.6s 0.36s ease both; }
+
+/* ─────────────── RESPONSIVE ─────────────── */
+@media (max-width:1024px){
+  .hero { grid-template-columns:1fr; padding:50px 6%; }
+  .hero::before { display:none; }
+  .hero-right { display:none; }
+  .info-bento { grid-template-columns:1fr 1fr; }
+  .i-card.wide { grid-column:span 2; }
+  .about-hero-section { grid-template-columns:1fr; }
+  .about-cards { grid-template-columns:1fr 1fr; }
+  .results-top { grid-template-columns:1fr; }
+  .contact-page { grid-template-columns:1fr; gap:40px; }
+}
+@media (max-width:768px){
+  .nav-center, .nav-btn { display:none; }
+  .hamburger { display:flex; }
+  .section { padding:60px 6%; }
+  .info-bento { grid-template-columns:1fr; }
+  .i-card.wide { grid-column:span 1; }
+  .about-cards { grid-template-columns:1fr; padding:0 6% 50px; }
+  .classes-section { padding:0 6% 50px; }
+  .contact-page { padding:50px 6%; }
+  .contact-form { padding:28px; }
+  .form-row { grid-template-columns:1fr; }
+  .cta-band { grid-template-columns:1fr; padding:40px; margin:0 6% 60px; }
+  footer { flex-direction:column; text-align:center; }
+  .pred-page { padding:40px 6%; }
+  .info-results { grid-template-columns:1fr; }
+  .ir-card.full { grid-column:1; }
+}
+@media (max-width:480px){
+  .hero h1 { font-size:2.2rem; }
+  .hero-trust { flex-direction:column; align-items:flex-start; gap:10px; }
+  .about-metrics { grid-template-columns:1fr 1fr; }
+  .card-stats { grid-template-columns:repeat(3,1fr); }
+  .social-row { flex-wrap:wrap; }
+}
+</style>
+</head>
+<body>
+
+<!-- ━━━━━━━━━━━━━ NAVBAR ━━━━━━━━━━━━━ -->
+<nav id="navbar">
+  <div class="logo" onclick="goTo('home')">
+    <div class="logo-mark"><i class="fa-solid fa-dna"></i></div>
+    <span class="logo-text">DermAI</span>
+  </div>
+
+  <div class="nav-center">
+    <a onclick="goTo('home')" class="active" id="nl-home">Home</a>
+    <a onclick="goTo('predict')" id="nl-predict">Prediction</a>
+    <a onclick="goTo('about')" id="nl-about">About</a>
+    <a onclick="goTo('contact')" id="nl-contact">Contact</a>
+  </div>
+
+  <button class="nav-btn" onclick="goTo('predict')">
+    <i class="fa-solid fa-microscope"></i> Analyze Now
+  </button>
+
+  <div class="hamburger" onclick="toggleDrawer()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+
+<div class="mobile-drawer" id="drawer">
+  <a onclick="goTo('home');toggleDrawer()" id="md-home">Home</a>
+  <a onclick="goTo('predict');toggleDrawer()" id="md-predict">Prediction</a>
+  <a onclick="goTo('about');toggleDrawer()" id="md-about">About</a>
+  <a onclick="goTo('contact');toggleDrawer()" id="md-contact">Contact</a>
+</div>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     HOME PAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<div class="page active" id="pg-home">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div>
+      <div class="hero-eyebrow du1">
+        <div class="hero-eyebrow-dot"></div>
+        <span>AI-Powered Dermatology Platform</span>
+      </div>
+
+      <h1 class="hero-h1 du2">
+        Detect Skin<br/>
+        <span class="grad">Cancer Early</span><br/>
+        <span class="outline">Save Lives</span>
+      </h1>
+
+      <p class="hero-desc du3">
+        DermAI leverages a deep ResNet50 model trained on 10,000+ clinical images 
+        to classify skin lesions with high accuracy — making expert-level screening 
+        accessible to everyone.
+      </p>
+
+      <div class="hero-actions du4">
+        <button class="btn-primary" onclick="goTo('predict')">
+          <i class="fa-solid fa-cloud-arrow-up"></i> Upload & Analyze
+        </button>
+        <button class="btn-outline" onclick="goTo('about')">
+          <i class="fa-solid fa-play-circle"></i> Learn More
+        </button>
+      </div>
+
+      <div class="hero-trust du4">
+        <div class="trust-item"><i class="fa-solid fa-shield-halved trust-icon"></i> ResNet50 Architecture</div>
+        <span class="trust-sep">·</span>
+        <div class="trust-item"><i class="fa-solid fa-database trust-icon"></i> HAM10000 Dataset</div>
+        <span class="trust-sep">·</span>
+        <div class="trust-item"><i class="fa-solid fa-lock trust-icon"></i> Privacy First</div>
+      </div>
+    </div>
+
+    <!-- Hero visual -->
+    <div class="hero-right du3">
+      <div class="float-chip fc1"><i class="fa-solid fa-circle-check"></i> ResNet50 Model</div>
+      <div class="float-chip fc2"><i class="fa-solid fa-chart-pie"></i> 7 Conditions</div>
+      <div class="float-chip fc3"><i class="fa-solid fa-bolt"></i> Fast Analysis</div>
+
+      <div class="hero-main-card">
+        <div class="scan-area">
+          <div class="scan-grid-bg"></div>
+          <div class="scan-beam"></div>
+          <div class="scan-crosshair">
+            <div class="crosshair-ring"></div>
+            <div class="crosshair-ring"></div>
+            <div class="crosshair-ring"></div>
+            <div class="crosshair-center"><i class="fa-solid fa-microscope"></i></div>
+          </div>
+          <div class="scan-corners">
+            <div class="corner tl"></div><div class="corner tr"></div>
+            <div class="corner bl"></div><div class="corner br"></div>
+          </div>
+        </div>
+        <div class="card-stats">
+          <div class="card-stat">
+            <span class="card-stat-val">7</span>
+            <div class="card-stat-lab">Classes</div>
+          </div>
+          <div class="card-stat">
+            <span class="card-stat-val">224</span>
+            <div class="card-stat-lab">Input px</div>
+          </div>
+          <div class="card-stat">
+            <span class="card-stat-val">Deep</span>
+            <div class="card-stat-lab">CNN</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DISEASE GALLERY -->
+  <div class="section" style="padding-top:20px;">
+    <div class="section-label">Recognized Conditions</div>
+    <h2 class="section-h2">7 Skin Lesion Classifications</h2>
+    <p class="section-sub">Our AI model is trained to identify and differentiate these clinically significant skin conditions.</p>
+
+    <div class="disease-scroll">
+      <div class="d-card">
+        <div class="d-card-img" style="background:linear-gradient(135deg,#1a0a12,#2d1020);">🔬</div>
+        <div class="d-card-body">
+          <div class="d-card-code" style="color:#f43f5e">mel</div>
+          <div class="d-card-name">Melanoma</div>
+          <div class="d-card-desc">Most dangerous skin cancer from pigment-producing cells.</div>
+          <div class="d-risk risk-h">High Risk</div>
+        </div>
+      </div>
+      <div class="d-card">
+        <div class="d-card-img" style="background:linear-gradient(135deg,#0f1a2e,#102040);">🧬</div>
+        <div class="d-card-body">
+          <div class="d-card-code" style="color:#f59e0b">bcc</div>
+          <div class="d-card-name">Basal Cell Carcinoma</div>
+          <div class="d-card-desc">Most common skin cancer. Grows slowly, rarely spreads.</div>
+          <div class="d-risk risk-m">Medium Risk</div>
+        </div>
+      </div>
+      <div class="d-card">
+        <div class="d-card-img" style="background:linear-gradient(135deg,#1c1502,#2d2205);">☀️</div>
+        <div class="d-card-body">
+          <div class="d-card-code" style="color:#fbbf24">akiec</div>
+          <div class="d-card-name">Actinic Keratosis</div>
+          <div class="d-card-desc">Scaly sun-damage patch — precancerous condition.</div>
+          <div class="d-risk risk-m">Watch Closely</div>
+        </div>
+      </div>
+      <div class="d-card">
+        <div class="d-card-img" style="background:linear-gradient(135deg,#061a10,#0a2818);">🌿</div>
+        <div class="d-card-body">
+          <div class="d-card-code" style="color:#10b981">bkl</div>
+          <div class="d-card-name">Benign Keratosis</div>
+          <div class="d-card-desc">Non-cancerous growths including seborrheic keratosis.</div>
+          <div class="d-risk risk-l">Benign</div>
+        </div>
+      </div>
+      <div class="d-card">
+        <div class="d-card-img" style="background:linear-gradient(135deg,#061218,#0a1e28);">💎</div>
+        <div class="d-card-body">
+          <div class="d-card-code" style="color:#0ef0d4">nv</div>
+          <div class="d-card-name">Melanocytic Nevi</div>
+          <div class="d-card-desc">Common moles — benign clusters of pigment cells.</div>
+          <div class="d-risk risk-l">Generally Safe</div>
+        </div>
+      </div>
+      <div class="d-card">
+        <div class="d-card-img" style="background:linear-gradient(135deg,#180a10,#280f1a);">🔴</div>
+        <div class="d-card-body">
+          <div class="d-card-code" style="color:#3b82f6">df</div>
+          <div class="d-card-name">Dermatofibroma</div>
+          <div class="d-card-desc">Benign fibrous nodule, often on the lower legs.</div>
+          <div class="d-risk risk-l">Benign</div>
+        </div>
+      </div>
+      <div class="d-card">
+        <div class="d-card-img" style="background:linear-gradient(135deg,#080a20,#0f1235);">🫀</div>
+        <div class="d-card-body">
+          <div class="d-card-code" style="color:#8b5cf6">vasc</div>
+          <div class="d-card-name">Vascular Lesion</div>
+          <div class="d-card-desc">Blood vessel-related lesions including angiomas.</div>
+          <div class="d-risk risk-l">Benign</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INFO BENTO -->
+  <div class="section" style="padding-top:20px;">
+    <div class="section-label">Education</div>
+    <h2 class="section-h2">Know Your Skin Health</h2>
+    <p class="section-sub">Understanding skin cancer can be life-saving. Here's everything you need to know.</p>
+
+    <div class="info-bento">
+      <div class="i-card wide">
+        <div class="i-card-top">
+          <div class="i-icon" style="background:linear-gradient(135deg,rgba(14,240,212,0.12),rgba(37,99,235,0.12));color:var(--teal);">
+            <i class="fa-solid fa-circle-question"></i>
+          </div>
+          <h3>What is Skin Cancer?</h3>
+        </div>
+        <p>Skin cancer is the abnormal growth of skin cells, most often developing on skin exposed to the sun — but it can also occur on areas that don't get much sun exposure. There are several types, including basal cell carcinoma, squamous cell carcinoma, and the most dangerous form, melanoma. It is the world's most diagnosed cancer, with early detection dramatically improving treatment outcomes. The good news: when identified early, the vast majority of skin cancers are highly treatable.</p>
+      </div>
+
+      <div class="i-card">
+        <div class="i-card-top">
+          <div class="i-icon" style="background:rgba(244,63,94,0.1);color:var(--rose2);">
+            <i class="fa-solid fa-eye"></i>
+          </div>
+          <h3>Common Symptoms</h3>
+        </div>
+        <ul>
+          <li>Unusual mole or new skin growth</li>
+          <li>Changes in size, color, or shape</li>
+          <li>Sores that won't heal</li>
+          <li>Irregular, ragged borders</li>
+          <li>Itching, bleeding, or tenderness</li>
+          <li>Pearly, waxy, or scaly bumps</li>
+        </ul>
+      </div>
+
+      <div class="i-card">
+        <div class="i-card-top">
+          <div class="i-icon" style="background:rgba(245,158,11,0.1);color:var(--amber2);">
+            <i class="fa-solid fa-sun"></i>
+          </div>
+          <h3>Known Causes</h3>
+        </div>
+        <ul>
+          <li>UV radiation from sun exposure</li>
+          <li>Tanning beds and UV lamps</li>
+          <li>Fair skin and light-colored eyes</li>
+          <li>Family or personal history of cancer</li>
+          <li>Weakened immune system</li>
+          <li>Exposure to radiation or chemicals</li>
+        </ul>
+      </div>
+
+      <div class="i-card">
+        <div class="i-card-top">
+          <div class="i-icon" style="background:rgba(16,185,129,0.1);color:var(--emerald);">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <h3>Early Detection</h3>
+        </div>
+        <p>When caught early, skin cancer — including melanoma — has a 5-year survival rate of over <strong style="color:var(--emerald)">99%</strong> for localized cases. Advanced stage melanoma drops to under 30%. AI screening tools like DermAI are designed to flag concerns early, prompting timely professional consultation.</p>
+      </div>
+
+      <div class="i-card">
+        <div class="i-card-top">
+          <div class="i-icon" style="background:rgba(139,92,246,0.1);color:var(--violet);">
+            <i class="fa-solid fa-person-walking"></i>
+          </div>
+          <h3>Prevention Tips</h3>
+        </div>
+        <ul>
+          <li>Apply SPF 30+ sunscreen daily</li>
+          <li>Avoid UV exposure 10AM–4PM</li>
+          <li>Wear hats and protective clothing</li>
+          <li>Avoid tanning beds entirely</li>
+          <li>Perform monthly self-examinations</li>
+          <li>Annual dermatologist screening</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA BAND -->
+  <div class="cta-band">
+    <div>
+      <h2>Ready to Analyze Your Skin?</h2>
+      <p>Upload an image and get AI-powered classification in seconds. Always consult a dermatologist for diagnosis.</p>
+    </div>
+    <button class="btn-primary" onclick="goTo('predict')" style="white-space:nowrap;">
+      <i class="fa-solid fa-upload"></i> Start Analysis
+    </button>
+  </div>
+</div>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     PREDICTION PAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<div class="page" id="pg-predict">
+  <div class="pred-page">
+    <div class="pred-header">
+      <div class="section-label">AI Analysis</div>
+      <h1 class="pred-header-h1 du1">Skin Lesion Classifier</h1>
+      <p class="du2">Upload a clear dermoscopic or clinical photograph for deep learning classification</p>
+    </div>
+
+    <!-- Upload -->
+    <div class="upload-zone" id="upZone"
+         onclick="document.getElementById('fInput').click()"
+         ondragover="onDragOver(event)"
+         ondragleave="onDragLeave(event)"
+         ondrop="onDrop(event)">
+      <div class="upload-icon-wrap"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+      <h3>Drag & Drop Image Here</h3>
+      <p>Supports JPG, PNG, JPEG · Up to 10 MB</p>
+      <button class="browse-btn" onclick="event.stopPropagation();document.getElementById('fInput').click()">
+        <i class="fa-solid fa-folder-open"></i> Browse Files
+      </button>
+      <input type="file" id="fInput" accept="image/*" onchange="onFileSelect(event)"/>
+      <p class="upload-hint">Your image is processed locally and never stored permanently</p>
+    </div>
+
+    <!-- Preview -->
+    <div class="preview-card" id="prevCard">
+      <div class="preview-top">
+        <h3><i class="fa-regular fa-image"></i> Selected Image</h3>
+        <button class="btn-clear" onclick="clearImg()"><i class="fa-solid fa-xmark"></i> Remove</button>
+      </div>
+      <img id="prevImg" src="" alt="Preview"/>
+      <button class="btn-analyze" id="analyzeBtn" onclick="runAnalysis()">
+        <i class="fa-solid fa-dna"></i> Run AI Analysis
+      </button>
+    </div>
+
+    <!-- Loader -->
+    <div class="loader" id="loader">
+      <div class="loader-ring"></div>
+      <div class="loader-steps">
+        <div class="loader-main" id="loaderMsg">Preprocessing image…</div>
+        <div class="loader-sub">Deep learning analysis in progress</div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div class="results-wrap" id="resultsWrap">
+
+      <div class="results-top">
+        <!-- Main result -->
+        <div class="result-panel">
+          <div class="res-eyebrow">Predicted Condition</div>
+          <div class="res-disease" id="rDisease">—</div>
+          <div class="res-code" id="rCode">—</div>
+
+          <div class="conf-block">
+            <div class="conf-row">
+              <span class="conf-label">Confidence Score</span>
+              <span class="conf-val" id="rConf">—</span>
+            </div>
+            <div class="conf-track">
+              <div class="conf-fill" id="rBar" style="width:0%"></div>
+            </div>
+          </div>
+
+          <div class="severity-tag" id="rSevTag" style="display:none">
+            <i class="fa-solid fa-circle-exclamation" id="rSevIcon"></i>
+            <span id="rSevText">—</span>
+          </div>
+        </div>
+
+        <!-- Pie chart -->
+        <div class="chart-panel">
+          <div class="panel-h">Top Predictions</div>
+          <div class="chart-wrap"><canvas id="pieChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Probability bars -->
+      <div class="prob-panel">
+        <div class="panel-h">Probability Distribution</div>
+        <div class="prob-list" id="probList"></div>
+      </div>
+
+      <!-- Disease info -->
+      <div id="diseaseInfo"></div>
+
+      <div class="disclaimer-box">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <p><strong>Medical Disclaimer:</strong> This AI tool is for educational and screening purposes only. It is not a substitute for professional medical diagnosis or treatment. Always consult a licensed dermatologist or physician for any skin concern.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     ABOUT PAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<div class="page" id="pg-about">
+
+  <div class="about-hero-section">
+    <div>
+      <div class="section-label">About DermAI</div>
+      <h1>AI-Powered<br/><span style="background:var(--grad-main);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Skin Cancer</span><br/>Detection</h1>
+      <p style="margin-top:16px;">DermAI combines a state-of-the-art ResNet50 deep learning model with clinical dermatology knowledge to make skin lesion analysis fast, accessible, and non-invasive — available anywhere, on any device.</p>
+      <div class="about-metrics">
+        <div class="about-metric"><span class="am-num">7</span><div class="am-desc">Classified conditions</div></div>
+        <div class="about-metric"><span class="am-num">10K+</span><div class="am-desc">Training images</div></div>
+        <div class="about-metric"><span class="am-num">224px</span><div class="am-desc">Model input size</div></div>
+        <div class="about-metric"><span class="am-num">Deep</span><div class="am-desc">CNN architecture</div></div>
+      </div>
+    </div>
+
+    <div class="about-visual">
+      <div class="panel-h" style="margin-bottom:20px;font-size:1rem;">Tech Stack</div>
+      <div class="about-tech-stack">
+        <div class="tech-item">
+          <div class="tech-dot" style="background:var(--teal)"></div>
+          <div><div class="tech-name">TensorFlow / Keras</div><div style="font-size:0.73rem;color:var(--text3);">Deep learning framework</div></div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-dot" style="background:var(--blue2)"></div>
+          <div><div class="tech-name">ResNet50</div><div style="font-size:0.73rem;color:var(--text3);">CNN backbone model</div></div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-dot" style="background:var(--amber)"></div>
+          <div><div class="tech-name">Flask</div><div style="font-size:0.73rem;color:var(--text3);">Python web backend</div></div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-dot" style="background:var(--rose)"></div>
+          <div><div class="tech-name">HAM10000</div><div style="font-size:0.73rem;color:var(--text3);">Training dataset</div></div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-dot" style="background:var(--violet)"></div>
+          <div><div class="tech-name">NumPy / Pillow</div><div style="font-size:0.73rem;color:var(--text3);">Image preprocessing</div></div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-dot" style="background:var(--emerald)"></div>
+          <div><div class="tech-name">Chart.js</div><div style="font-size:0.73rem;color:var(--text3);">Visualization</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- About cards -->
+  <div class="about-cards">
+    <div class="a-card">
+      <div class="a-card-stripe" style="background:var(--grad-main)"></div>
+      <span class="a-card-emoji">🧠</span>
+      <h3>Deep Learning Model</h3>
+      <p>Built on ResNet50 — pre-trained on ImageNet and fine-tuned on dermoscopic images. It detects subtle visual patterns invisible to the naked eye, including texture anomalies, color gradients, and structural irregularities that distinguish benign from malignant lesions.</p>
+    </div>
+    <div class="a-card">
+      <div class="a-card-stripe" style="background:var(--grad-cool)"></div>
+      <span class="a-card-emoji">📊</span>
+      <h3>HAM10000 Dataset</h3>
+      <p>Trained on the Human Against Machine (HAM10000) benchmark — over 10,000 dermatoscopic images of common pigmented skin lesions, annotated by expert dermatologists. This ensures the model learns from real, validated clinical data.</p>
+    </div>
+    <div class="a-card">
+      <div class="a-card-stripe" style="background:var(--grad-warm)"></div>
+      <span class="a-card-emoji">🌍</span>
+      <h3>Our Mission</h3>
+      <p>DermAI was built to democratize skin cancer screening, especially in Ethiopia and other regions with limited dermatologist access. By delivering AI analysis through any browser, we bridge the gap between advanced diagnostics and underserved communities.</p>
+    </div>
+    <div class="a-card">
+      <div class="a-card-stripe" style="background:linear-gradient(135deg,var(--emerald),#059669)"></div>
+      <span class="a-card-emoji">🔒</span>
+      <h3>Privacy First</h3>
+      <p>Your uploaded images are processed securely and never stored permanently on our servers. We handle all medical imagery with the highest standard of data protection, ethics, and patient confidentiality.</p>
+    </div>
+    <div class="a-card">
+      <div class="a-card-stripe" style="background:linear-gradient(135deg,var(--violet),#6d28d9)"></div>
+      <span class="a-card-emoji">⚠️</span>
+      <h3>Medical Disclaimer</h3>
+      <p>DermAI is an educational screening tool only — not a replacement for professional medical advice, diagnosis, or treatment. Always consult a qualified dermatologist for skin concerns. Use this as a first step, never the final word.</p>
+    </div>
+    <div class="a-card">
+      <div class="a-card-stripe" style="background:linear-gradient(135deg,var(--amber),#d97706)"></div>
+      <span class="a-card-emoji">🚀</span>
+      <h3>How It Works</h3>
+      <p>Upload a clear image of your skin lesion → our model preprocesses it to 224×224 pixels → ResNet50 extracts deep visual features → a softmax classifier outputs probabilities for all 7 lesion classes → results and recommendations are displayed instantly.</p>
+    </div>
+  </div>
+
+  <!-- Classes -->
+  <div class="classes-section">
+    <div class="section-label">Model Output</div>
+    <h2 class="section-h2">Detectable Conditions</h2>
+    <div class="classes-grid">
+      <div class="cls-card"><div class="cls-code">akiec</div><div class="cls-name">Actinic Keratosis</div><div class="cls-desc">Rough, scaly precancerous patch from sun damage. May progress to squamous cell carcinoma.</div></div>
+      <div class="cls-card"><div class="cls-code">bcc</div><div class="cls-name">Basal Cell Carcinoma</div><div class="cls-desc">Most common skin cancer. Grows slowly, rarely metastasizes, but requires treatment.</div></div>
+      <div class="cls-card"><div class="cls-code">bkl</div><div class="cls-name">Benign Keratosis</div><div class="cls-desc">Non-cancerous growths including seborrheic keratosis, solar lentigo, and lichen planus keratosis.</div></div>
+      <div class="cls-card"><div class="cls-code">df</div><div class="cls-name">Dermatofibroma</div><div class="cls-desc">Benign fibrous nodule, most common on lower extremities. Usually harmless.</div></div>
+      <div class="cls-card"><div class="cls-code">mel</div><div class="cls-name">Melanoma</div><div class="cls-desc">Most serious skin cancer arising from melanocytes. Early detection is critical for survival.</div></div>
+      <div class="cls-card"><div class="cls-code">nv</div><div class="cls-name">Melanocytic Nevi</div><div class="cls-desc">Common moles. Benign clusters of melanocytes. Monitor for changes with the ABCDE rule.</div></div>
+      <div class="cls-card"><div class="cls-code">vasc</div><div class="cls-name">Vascular Lesion</div><div class="cls-desc">Cherry angiomas, angiokeratomas, pyogenic granulomas. Generally benign vascular growths.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     CONTACT PAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<div class="page" id="pg-contact">
+  <div class="contact-page">
+
+    <!-- Left -->
+    <div class="contact-left">
+      <div class="section-label" style="margin-bottom:16px;">Contact Us</div>
+      <h2>Let's <span style="background:var(--grad-main);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Connect</span></h2>
+      <p>Have a question, feedback, or want to collaborate on AI healthcare initiatives? We'd love to hear from you.</p>
+
+      <div class="contact-info-list">
+        <div class="ci-item">
+          <div class="ci-icon"><i class="fa-solid fa-location-dot"></i></div>
+          <div>
+            <div class="ci-label">Address</div>
+            <div class="ci-val">Jinka, South Ethiopia</div>
+          </div>
+        </div>
+        <div class="ci-item">
+          <div class="ci-icon"><i class="fa-solid fa-phone"></i></div>
+          <div>
+            <div class="ci-label">Phone</div>
+            <div class="ci-val">+251 992 771 201</div>
+          </div>
+        </div>
+        <div class="ci-item">
+          <div class="ci-icon"><i class="fa-solid fa-envelope"></i></div>
+          <div>
+            <div class="ci-label">Email</div>
+            <div class="ci-val">tesfaye.germant@gmail.com</div>
+          </div>
+        </div>
+        <div class="ci-item">
+          <div class="ci-icon"><i class="fa-regular fa-clock"></i></div>
+          <div>
+            <div class="ci-label">Working Hours</div>
+            <ul class="ci-hours">
+              <li>Monday – Friday: 8:00 AM – 5:00 PM</li>
+              <li>Saturday: 9:00 AM – 1:00 PM</li>
+              <li>Sunday: Closed</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="social-label">Follow Us</div>
+      <div class="social-row">
+        <a class="soc-btn" href="#" title="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+        <a class="soc-btn" href="#" title="Telegram"><i class="fa-brands fa-telegram"></i></a>
+        <a class="soc-btn" href="#" title="GitHub"><i class="fa-brands fa-github"></i></a>
+        <a class="soc-btn" href="#" title="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+        <a class="soc-btn" href="#" title="Twitter/X"><i class="fa-brands fa-x-twitter"></i></a>
+      </div>
+    </div>
+
+    <!-- Right: Form -->
+    <div class="contact-form">
+      <div class="cf-head">
+        <h3>Send Us a Message</h3>
+        <p>We typically respond within 24 hours on working days.</p>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="cf-name" placeholder="Your full name"/>
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="cf-email" placeholder="your@email.com"/>
+        </div>
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input type="tel" id="cf-phone" placeholder="+251 9XX XXX XXX"/>
+        </div>
+        <div class="form-group">
+          <label>Subject</label>
+          <input type="text" id="cf-subject" placeholder="How can we help?"/>
+        </div>
+        <div class="form-group full">
+          <label>Message</label>
+          <textarea id="cf-msg" placeholder="Write your message here…"></textarea>
+        </div>
+      </div>
+      <button class="btn-send" onclick="sendMsg()">
+        <i class="fa-solid fa-paper-plane"></i> Send Message
+      </button>
+      <div class="form-success-msg" id="formOk">
+        <i class="fa-solid fa-circle-check"></i>
+        <span>Message sent! We'll get back to you within 24 hours.</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-left">
+    <div class="footer-logo" onclick="goTo('home')">DermAI</div>
+    <div class="footer-copy">© 2025 DermAI · Educational purposes only · Not medical advice Group two @JKU CS </div>
+  </div>
+  <div class="footer-links">
+    <a onclick="goTo('home')">Home</a>
+    <a onclick="goTo('predict')">Prediction</a>
+    <a onclick="goTo('about')">About</a>
+    <a onclick="goTo('contact')">Contact</a>
+  </div>
+</footer>
+
+<script>
+/* ─────────── NAVIGATION ─────────── */
+const PAGES = ['home','predict','about','contact'];
+function goTo(id) {
+  PAGES.forEach(p => {
+    document.getElementById('pg-'+p).classList.toggle('active', p===id);
+    ['nl','md'].forEach(prefix => {
+      const el = document.getElementById(prefix+'-'+p);
+      if (el) el.classList.toggle('active', p===id);
+    });
+  });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function toggleDrawer() {
+  document.getElementById('drawer').classList.toggle('open');
+}
+
+/* ─────────── DISEASE DATA ─────────── */
+const DB = {
+  mel: {
+    name: 'Melanoma', code: 'mel', sev: 'high',
+    sevText: 'High Risk — Immediate Attention Required',
+    desc: 'Melanoma is the most dangerous form of skin cancer, arising from pigment-producing melanocytes. It can develop anywhere on the body, including areas rarely exposed to sun. Though less common than other skin cancers, it is far more likely to spread if untreated.',
+    causes: ['Intense UV radiation or repeated sunburns','BRAF gene mutations','Family history of melanoma','Fair skin, light hair, and light eyes','Many or atypical moles'],
+    symptoms: ['Mole changing in size, shape, or color','Lesion with asymmetric or irregular borders','Dark streaks beneath fingernails','Sores that persistently fail to heal','Satellite moles appearing near existing ones'],
+    recs: ['Consult a dermatologist immediately','Surgical excision is the standard treatment','Avoid all UV exposure until examined','Discontinue all tanning bed use','Schedule regular full-body skin screenings']
+  },
+  bcc: {
+    name: 'Basal Cell Carcinoma', code: 'bcc', sev: 'med',
+    sevText: 'Medium Risk — Professional Evaluation Needed',
+    desc: 'Basal cell carcinoma is the most common skin cancer globally. It arises in the basal cells at the base of the epidermis. Although it grows slowly and rarely metastasizes, untreated BCC can cause significant local tissue damage.',
+    causes: ['Chronic sun (UV) exposure','History of blistering sunburns','Very fair or light complexion','Long-term exposure to arsenic or X-rays','Immunosuppressive medications'],
+    symptoms: ['Pearly or waxy bump','Flat, flesh-colored or brown scar-like lesion','Bleeding or scabbing sore that recurs','Pink growth with a raised, rolled border','Sore that heals briefly then reopens'],
+    recs: ['Schedule an appointment with a dermatologist','Surgical excision, Mohs surgery, or cryotherapy are common','Use SPF 30+ broad-spectrum sunscreen every day','Wear protective clothing and wide-brim hats','Conduct monthly self-examinations of the skin']
+  },
+  akiec: {
+    name: 'Actinic Keratosis', code: 'akiec', sev: 'med',
+    sevText: 'Precancerous — Close Monitoring Required',
+    desc: 'Actinic keratosis is a rough, scaly skin patch resulting from years of cumulative sun exposure. It is considered a precancerous lesion as it may evolve into squamous cell carcinoma if left untreated. Common in individuals with significant sun exposure history.',
+    causes: ['Cumulative UV exposure over many years','Fair skin that burns easily','Advanced age','Outdoor occupation or hobbies','Weakened immune system'],
+    symptoms: ['Rough, dry, scaly skin patch','Flat to slightly raised surface','Hard, warty texture in some cases','Itching, burning, or sensitivity','Colors ranging from pink to red to brown'],
+    recs: ['See a dermatologist for evaluation and treatment','Cryotherapy, topical creams, or laser therapy available','Apply SPF 50+ sunscreen daily without exception','Wear protective hats and clothing outdoors','Avoid sun exposure between 10 AM and 4 PM']
+  },
+  bkl: {
+    name: 'Benign Keratosis', code: 'bkl', sev: 'low',
+    sevText: 'Low Risk — Benign Condition',
+    desc: 'Benign keratosis-like lesions include seborrheic keratosis, solar lentigo, and lichen planus-like keratosis. These are harmless, non-cancerous growths that become increasingly common with age. They do not require treatment unless they cause discomfort.',
+    causes: ['Natural skin aging process','Genetic predisposition','Prolonged sun exposure (solar lentigo)','Skin friction or irritation in some areas'],
+    symptoms: ['Waxy, stuck-on appearance','Brown, black, or pale coloring','Round or oval shape','Well-defined, clearly visible borders','Usually less than 2.5 cm in diameter'],
+    recs: ['Regular monitoring for any changes in appearance','Removal available for cosmetic or comfort reasons','Daily sun protection is recommended','Annual full-body skin check advised','No urgent medical intervention typically required']
+  },
+  nv: {
+    name: 'Melanocytic Nevi', code: 'nv', sev: 'low',
+    sevText: 'Low Risk — Common Mole',
+    desc: 'Melanocytic nevi (moles) are benign growths formed by clusters of pigment-producing melanocytes. Most are entirely harmless, but monitoring them for changes using the ABCDE rule is important, as rare cases can progress toward melanoma.',
+    causes: ['Childhood and adolescent sun exposure','Genetic and hereditary factors','Hormonal changes during puberty or pregnancy','Fair complexion','Having more than 50 moles increases melanoma risk'],
+    symptoms: ['Small, round, symmetrical mark','Uniform brown, black, or tan color','Smooth texture and well-defined border','Stable, consistent size over time','Flat or slightly raised surface'],
+    recs: ['Apply the ABCDE rule: Asymmetry, Border, Color, Diameter, Evolving','Annual skin screenings for those with many moles','Daily sunscreen use to prevent new moles forming','Photograph moles monthly to track any changes','See a doctor promptly if any mole changes']
+  },
+  df: {
+    name: 'Dermatofibroma', code: 'df', sev: 'low',
+    sevText: 'Low Risk — Benign Nodule',
+    desc: 'Dermatofibromas are benign fibrous nodules commonly found on the lower legs. They feel like a firm button under the skin and are generally harmless. They persist indefinitely but do not pose any health risk.',
+    causes: ['Minor skin trauma such as insect bites or ingrown hairs','Exact cause remains unclear in many cases','More prevalent in women aged 20 to 40'],
+    symptoms: ['Small, firm bump under the skin surface','Characteristic dimpling inward when pinched','Pink, reddish, or brownish coloration','Slight tenderness when pressed firmly','Usually less than 1 cm in diameter'],
+    recs: ['No treatment required in most cases','Surgical removal if causing discomfort or cosmetically bothersome','Monitor for unusual changes in size or color','Protect skin from trauma and abrasion','Annual dermatological review for peace of mind']
+  },
+  vasc: {
+    name: 'Vascular Lesion', code: 'vasc', sev: 'low',
+    sevText: 'Low Risk — Benign Vascular Growth',
+    desc: 'Vascular lesions encompass a range of skin conditions involving blood vessels — including cherry angiomas, angiokeratomas, and pyogenic granulomas. These are generally benign, though some may bleed easily or grow rapidly, warranting professional evaluation.',
+    causes: ['Dilated or abnormal blood vessels near skin surface','Genetic predisposition','Aging process (cherry angiomas more common over 40)','Trauma to the skin (pyogenic granuloma)','Hormonal fluctuations'],
+    symptoms: ['Bright red, purple, or blue spot or growth','Smooth or slightly warty surface','Bleeds easily when irritated','Round or irregular in shape','May appear as a single or multiple lesions'],
+    recs: ['Consult a dermatologist if lesion bleeds frequently','Laser therapy or electrocautery for cosmetic removal','Protect skin from trauma and harsh products','Use gentle skincare routines','Monitor for rapid change in size or character']
+  }
+};
+
+/* ─────────── FILE HANDLING ─────────── */
+let activeFile = null;
+let pieInst = null;
+
+function onDragOver(e) { e.preventDefault(); document.getElementById('upZone').classList.add('over'); }
+function onDragLeave() { document.getElementById('upZone').classList.remove('over'); }
+function onDrop(e) {
+  e.preventDefault(); onDragLeave();
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) loadFile(f);
+}
+function onFileSelect(e) { if (e.target.files[0]) loadFile(e.target.files[0]); }
+function loadFile(f) {
+  activeFile = f;
+  const r = new FileReader();
+  r.onload = ev => {
+    document.getElementById('prevImg').src = ev.target.result;
+    document.getElementById('prevCard').classList.add('show');
+    document.getElementById('resultsWrap').classList.remove('show');
+    document.getElementById('loader').classList.remove('show');
+  };
+  r.readAsDataURL(f);
+}
+function clearImg() {
+  activeFile = null;
+  document.getElementById('prevCard').classList.remove('show');
+  document.getElementById('resultsWrap').classList.remove('show');
+  document.getElementById('fInput').value = '';
+}
+
+/* ─────────── ANALYSIS ─────────── */
+const loaderMsgs = [
+  'Preprocessing image…',
+  'Extracting visual features…',
+  'Running ResNet50 inference…',
+  'Computing probabilities…',
+  'Preparing your results…'
+];
+
+function runAnalysis() {
+  if (!activeFile) return;
+  document.getElementById('loader').classList.add('show');
+  document.getElementById('prevCard').style.opacity = '0.5';
+  document.getElementById('prevCard').style.pointerEvents = 'none';
+
+  let step = 0;
+  const iv = setInterval(() => {
+    step++;
+    if (step < loaderMsgs.length) document.getElementById('loaderMsg').textContent = loaderMsgs[step];
+  }, 420);
+
+  const formData = new FormData();
+  formData.append('image', activeFile);
+
+  fetch('/predict', { method: 'POST', body: formData })
+    .then(r => {
+      if (!r.ok) throw new Error('Server error: ' + r.status);
+      return r.json();
+    })
+    .then(data => {
+      clearInterval(iv);
+      document.getElementById('loader').classList.remove('show');
+      document.getElementById('prevCard').style.opacity = '1';
+      document.getElementById('prevCard').style.pointerEvents = 'auto';
+
+      const classes = Object.keys(data);
+      const probs = Object.values(data);
+      const top = probs.indexOf(Math.max(...probs));
+      renderResults(classes, probs, top);
+    })
+    .catch(err => {
+      clearInterval(iv);
+      document.getElementById('loader').classList.remove('show');
+      document.getElementById('prevCard').style.opacity = '1';
+      document.getElementById('prevCard').style.pointerEvents = 'auto';
+      document.getElementById('loaderMsg').textContent = 'Analysis failed.';
+      alert('Error connecting to model server.\nMake sure app.py is running.\n\n' + err.message);
+    });
+}
+
+function renderResults(cls, probs, maxIdx) {
+  const key = cls[maxIdx];
+  const d = DB[key];
+  const conf = probs[maxIdx];
+
+  // Main card
+  document.getElementById('rDisease').textContent = d.name;
+  document.getElementById('rCode').textContent = d.code + ' · ' + d.name;
+  document.getElementById('rConf').textContent = (conf*100).toFixed(1) + '%';
+  setTimeout(() => { document.getElementById('rBar').style.width = (conf*100)+'%'; }, 80);
+
+  const tag = document.getElementById('rSevTag');
+  tag.style.display = 'inline-flex';
+  tag.className = 'severity-tag ' + (d.sev==='high'?'sev-high':d.sev==='med'?'sev-med':'sev-low');
+  document.getElementById('rSevIcon').className = d.sev==='high'
+    ? 'fa-solid fa-triangle-exclamation' : d.sev==='med'
+    ? 'fa-solid fa-circle-exclamation' : 'fa-solid fa-circle-check';
+  document.getElementById('rSevText').textContent = d.sevText;
+
+  // Pie chart
+  const sorted = cls.map((c,i)=>({c,p:probs[i]})).sort((a,b)=>b.p-a.p).slice(0,5);
+  if (pieInst) pieInst.destroy();
+  pieInst = new Chart(document.getElementById('pieChart'), {
+    type: 'doughnut',
+    data: {
+      labels: sorted.map(x => DB[x.c].name),
+      datasets: [{
+        data: sorted.map(x => +(x.p*100).toFixed(2)),
+        backgroundColor: ['rgba(14,240,212,0.85)','rgba(37,99,235,0.75)','rgba(16,185,129,0.7)','rgba(245,158,11,0.65)','rgba(244,63,94,0.6)'],
+        borderColor: '#111827', borderWidth: 3,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '68%',
+      plugins: {
+        legend: { position:'right', labels:{ color:'#94a3b8', font:{size:11}, boxWidth:10, padding:10 } }
+      }
+    }
+  });
+
+  // Bars
+  const barColors = ['#0ef0d4','#2563eb','#10b981','#f59e0b','#f43f5e','#8b5cf6','#3b82f6'];
+  const list = document.getElementById('probList');
+  list.innerHTML = '';
+  cls.map((c,i)=>({c,p:probs[i]})).sort((a,b)=>b.p-a.p).forEach((item,rank) => {
+    const row = document.createElement('div');
+    row.className = 'prob-row';
+    row.innerHTML = `
+      <div class="prob-name">${item.c}</div>
+      <div class="prob-track"><div class="prob-fill" style="width:0%;background:${barColors[rank]};box-shadow:0 0 8px ${barColors[rank]}60"></div></div>
+      <div class="prob-pct">${(item.p*100).toFixed(1)}%</div>`;
+    list.appendChild(row);
+    setTimeout(() => { row.querySelector('.prob-fill').style.width = (item.p*100)+'%'; }, 80 + rank*60);
+  });
+
+  // Disease info
+  const sec = document.getElementById('diseaseInfo');
+  sec.innerHTML = `
+    <div class="info-results" style="margin-bottom:20px;">
+      <div class="ir-card full">
+        <span class="ir-icon">📋</span>
+        <h4>About ${d.name}</h4>
+        <p>${d.desc}</p>
+      </div>
+      <div class="ir-card">
+        <span class="ir-icon">🔬</span>
+        <h4>Common Causes</h4>
+        <ul>${d.causes.map(c=>`<li>${c}</li>`).join('')}</ul>
+      </div>
+      <div class="ir-card">
+        <span class="ir-icon">👁️</span>
+        <h4>Symptoms</h4>
+        <ul>${d.symptoms.map(s=>`<li>${s}</li>`).join('')}</ul>
+      </div>
+      <div class="ir-card full" style="background:${d.sev==='high'?'rgba(244,63,94,0.04)':d.sev==='med'?'rgba(245,158,11,0.04)':'rgba(16,185,129,0.04)'};border-color:${d.sev==='high'?'rgba(244,63,94,0.15)':d.sev==='med'?'rgba(245,158,11,0.15)':'rgba(16,185,129,0.15)'}">
+        <span class="ir-icon">✅</span>
+        <h4>Recommendations</h4>
+        ${d.recs.map(r=>`<div class="rec-row"><i class="fa-solid fa-chevron-right"></i><p>${r}</p></div>`).join('')}
+      </div>
+    </div>`;
+
+  document.getElementById('resultsWrap').classList.add('show');
+  setTimeout(() => {
+    document.getElementById('resultsWrap').scrollIntoView({ behavior:'smooth', block:'start' });
+  }, 100);
+}
+
+/* ─────────── CONTACT FORM ─────────── */
+function sendMsg() {
+  const name = document.getElementById('cf-name').value.trim();
+  const email = document.getElementById('cf-email').value.trim();
+  const msg = document.getElementById('cf-msg').value.trim();
+  if (!name || !email || !msg) { alert('Please fill in Name, Email, and Message fields.'); return; }
+  document.getElementById('formOk').classList.add('show');
+  ['cf-name','cf-email','cf-phone','cf-subject','cf-msg'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  setTimeout(() => document.getElementById('formOk').classList.remove('show'), 6000);
+}
+</script>
+</body>
+</html>
