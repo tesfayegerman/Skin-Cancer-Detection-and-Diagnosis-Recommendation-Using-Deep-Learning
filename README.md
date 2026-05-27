@@ -222,7 +222,8 @@ http://localhost:5000
 
 ## 👤 Author
 
-**[      ]**
+**[    T.G  ]**
+
 3rd Year Computer Science Student
 Jinka University (JKU) — Department of Computer Science
 May 2026
@@ -231,7 +232,7 @@ May 2026
 
 ## 📄 License
 
-This project is developed for academic purposes at Jimma University. All rights reserved.
+This project is developed for academic purposes at Jinka University. All rights reserved.
 
 ---
 
