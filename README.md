@@ -225,7 +225,7 @@ http://localhost:5000
 **[    T.G  ]**
 
 3rd Year Computer Science Student
-Jinka University (JKU) — Department of Computer Science
+@Jinka University (JKU) — Department of Computer Science
 May 2026
 
 ---
